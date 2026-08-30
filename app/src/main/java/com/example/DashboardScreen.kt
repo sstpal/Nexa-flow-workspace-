@@ -1,4 +1,7 @@
 package com.example
+import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import com.example.utils.SessionManager
 
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -1133,6 +1136,26 @@ fun EngineSettingsTab(
     onOpenUpdateDialog: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    val exportLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val success = SessionManager.exportCookiesToJson(context, uri)
+                Toast.makeText(context, if (success) "Cookies exported successfully!" else "Failed to export cookies", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    val importLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val count = SessionManager.importCookiesFromJson(context, uri)
+                Toast.makeText(context, if (count > 0) "Imported $count cookies successfully!" else "Failed to import or no cookies found", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     var globalBackground by remember { BackgroundSessionManager.globalBackgroundTasksEnabled }
     var trackingProtection by remember { mutableStateOf(true) }
     var hardwareAccel by remember { mutableStateOf(true) }
@@ -1367,6 +1390,30 @@ fun EngineSettingsTab(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Storage Management", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    
+                    val cleanupDays by remember { ThemePreferences.cleanupScheduleDays }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text("Auto-Cleanup Cache", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text(if (cleanupDays == 0) "Never" else "Every $cleanupDays days", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Button(
+                            onClick = { 
+                                val next = when(cleanupDays) {
+                                    0 -> 1
+                                    1 -> 7
+                                    7 -> 30
+                                    else -> 0
+                                }
+                                ThemePreferences.setCleanupSchedule(context, next)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                        ) {
+                            Text("Change")
+                        }
+                    }
+                    
                     Button(
                         onClick = {
                             BackgroundSessionManager.clearAll()
@@ -1379,6 +1426,32 @@ fun EngineSettingsTab(
                         Icon(Icons.Outlined.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Clear Background Sessions & Cache")
+                    }
+                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    
+                    Text("Cookie Backup & Restore", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Export or import all session cookies across profiles as JSON. Fully complies with Google flow policies, backing up local authenticated states safely.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = { exportLauncher.launch("nexaflow_cookies.json") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.UploadFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Export", fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Import", fontSize = 12.sp)
+                        }
                     }
                 }
             }

@@ -1,4 +1,6 @@
 package com.example
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBar
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -501,6 +503,45 @@ fun BrowserScreen(
     }
 
     Scaffold(
+        bottomBar = {
+            if (isTopBarVisible && !isFullScreenVideo) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 4.dp
+                ) {
+                    val displayProfiles = allProfiles.take(5)
+                    for (p in displayProfiles) {
+                        NavigationBarItem(
+                            selected = p.id == profile.id,
+                            onClick = {
+                                if (p.id != profile.id) {
+                                    coroutineScope.launch {
+                                        SessionManager.extractAndSaveCookies(context, profile.id, currentUrl)
+                                        SessionManager.isolateAndSwitchProfile(context, p.id, p.url)
+                                        onSwitchProfile(p)
+                                    }
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (p.isDesktopMode) Icons.Outlined.DesktopWindows else Icons.Outlined.Smartphone,
+                                    contentDescription = p.name,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = p.name,
+                                    fontSize = 10.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        },
         topBar = {
             AnimatedVisibility(
                 visible = isTopBarVisible && !isFullScreenVideo,
