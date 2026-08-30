@@ -1009,6 +1009,7 @@ fun BrowserScreen(
                         val existing = BackgroundSessionManager.getSession(profile.id)
                         if (existing != null) {
                             (existing.parent as? ViewGroup)?.removeView(existing)
+                            existing.onResume()
                             webViewInstance = existing
                             isProfileReady = true
                             existing
@@ -1030,8 +1031,8 @@ fun BrowserScreen(
                                     android.util.Log.e("BrowserScreen", "Failed to set MULTI_PROFILE", e)
                                 }
 
-                                // Hardware acceleration layer for 60/120fps butter-smooth rendering
-                                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                                // Let system handle hardware acceleration automatically
+                                // setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
                                 val cookieManager = try {
                                     if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
