@@ -77,6 +77,17 @@ object BackgroundSessionManager {
     fun removeSession(profileId: Int, context: Context? = null) {
         profileWebViews[profileId]?.let { wv ->
             try {
+                if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                    val profileStore = androidx.webkit.ProfileStore.getInstance()
+                    val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                    webkitProfile?.cookieManager?.flush()
+                } else {
+                    android.webkit.CookieManager.getInstance().flush()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
                 (wv.parent as? ViewGroup)?.removeView(wv)
                 wv.stopLoading()
                 wv.destroy()
@@ -96,7 +107,18 @@ object BackgroundSessionManager {
     }
 
     fun stopAllSessions(context: Context? = null) {
-        profileWebViews.values.forEach { wv ->
+        profileWebViews.forEach { (profileId, wv) ->
+            try {
+                if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                    val profileStore = androidx.webkit.ProfileStore.getInstance()
+                    val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                    webkitProfile?.cookieManager?.flush()
+                } else {
+                    android.webkit.CookieManager.getInstance().flush()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             try {
                 (wv.parent as? ViewGroup)?.removeView(wv)
                 wv.stopLoading()
@@ -112,6 +134,21 @@ object BackgroundSessionManager {
 
     fun clearAll() {
         stopAllSessions()
+    }
+
+    fun flushAllCookies() {
+        try {
+            if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                val profileStore = androidx.webkit.ProfileStore.getInstance()
+                profileWebViews.keys.forEach { profileId ->
+                    val webkitProfile = profileStore.getProfile("profile_$profileId")
+                    webkitProfile?.cookieManager?.flush()
+                }
+            }
+            android.webkit.CookieManager.getInstance().flush()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun getRunningTaskCount(): Int = profileWebViews.size

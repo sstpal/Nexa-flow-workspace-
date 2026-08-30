@@ -168,11 +168,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        BackgroundSessionManager.flushAllCookies()
         BackgroundSessionManager.onAppBackgrounded(this)
     }
 
     override fun onStop() {
         super.onStop()
+        BackgroundSessionManager.flushAllCookies()
         BackgroundSessionManager.onAppBackgrounded(this)
     }
 }

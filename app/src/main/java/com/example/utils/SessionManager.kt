@@ -51,6 +51,10 @@ object SessionManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                val previousId = currentActiveProfileId
+                if (previousId != null && previousId != targetProfileId) {
+                    extractAndSaveAllSessionCookies(context, previousId, activeUrl)
+                }
                 currentActiveProfileId = targetProfileId
                 return@withContext true
             }
@@ -103,6 +107,13 @@ object SessionManager {
         url: String? = null
     ): List<SessionCookie> = withContext(Dispatchers.IO) {
         if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+            try {
+                val profileStore = androidx.webkit.ProfileStore.getInstance()
+                val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                webkitProfile?.cookieManager?.flush()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             return@withContext emptyList()
         }
         val saved = mutableListOf<SessionCookie>()
@@ -187,9 +198,6 @@ object SessionManager {
         profileId: Int,
         url: String
     ): SessionCookie? = withContext(Dispatchers.IO) {
-        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
-            return@withContext null
-        }
         val list = extractAndSaveAllSessionCookies(context, profileId, url)
         val domain = extractDomain(url)
         list.find { it.domain.equals(domain, ignoreCase = true) } ?: list.firstOrNull()

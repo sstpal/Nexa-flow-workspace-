@@ -465,6 +465,17 @@ fun BrowserScreen(
     // Handle background task preservation or destruction on dispose
     DisposableEffect(profile.id) {
         onDispose {
+            try {
+                if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                    val profileStore = androidx.webkit.ProfileStore.getInstance()
+                    val webkitProfile = profileStore.getProfile("profile_${profile.id}")
+                    webkitProfile?.cookieManager?.flush()
+                } else {
+                    CookieManager.getInstance().flush()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             webViewInstance?.let { wv ->
                 (wv.parent as? ViewGroup)?.removeView(wv)
                 BackgroundSessionManager.registerSession(profile.id, wv, isBackgroundActive, context)
