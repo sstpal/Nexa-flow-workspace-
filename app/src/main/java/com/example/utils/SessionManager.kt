@@ -50,6 +50,10 @@ object SessionManager {
         activeUrl: String? = null
     ): Boolean = withContext(Dispatchers.IO) {
         try {
+            if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                currentActiveProfileId = targetProfileId
+                return@withContext true
+            }
             val previousId = currentActiveProfileId
             if (previousId != null && previousId != targetProfileId) {
                 extractAndSaveAllSessionCookies(context, previousId, activeUrl)
@@ -98,6 +102,9 @@ object SessionManager {
         profileId: Int,
         url: String? = null
     ): List<SessionCookie> = withContext(Dispatchers.IO) {
+        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+            return@withContext emptyList()
+        }
         val saved = mutableListOf<SessionCookie>()
         try {
             val cookieManager = CookieManager.getInstance()
@@ -180,6 +187,9 @@ object SessionManager {
         profileId: Int,
         url: String
     ): SessionCookie? = withContext(Dispatchers.IO) {
+        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+            return@withContext null
+        }
         val list = extractAndSaveAllSessionCookies(context, profileId, url)
         val domain = extractDomain(url)
         list.find { it.domain.equals(domain, ignoreCase = true) } ?: list.firstOrNull()
@@ -194,6 +204,9 @@ object SessionManager {
         profileId: Int,
         url: String
     ): Boolean = withContext(Dispatchers.IO) {
+        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+            return@withContext true
+        }
         if (url.isBlank() || !url.startsWith("http")) return@withContext false
 
         val domain = extractDomain(url)
@@ -245,6 +258,9 @@ object SessionManager {
         context: Context,
         profileId: Int
     ): Int = withContext(Dispatchers.IO) {
+        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+            return@withContext 0
+        }
         try {
             val db = AppDatabase.getDatabase(context)
             val cookies = db.sessionCookieDao().getCookiesForProfileSync(profileId)

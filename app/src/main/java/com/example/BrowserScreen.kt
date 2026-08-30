@@ -83,6 +83,7 @@ private const val MOBILE_USER_AGENT =
 
 private const val DESKTOP_INJECTION_SCRIPT = """
     (function() {
+        if (window.location.hostname.includes('google.') || window.location.hostname.includes('youtube.')) return;
         try {
             // 1. Spoof Navigator Platform & Device Properties
             Object.defineProperty(navigator, 'platform', { get: () => 'Win32', configurable: true });
@@ -1018,10 +1019,31 @@ fun BrowserScreen(
                                     ViewGroup.LayoutParams.MATCH_PARENT
                                 )
 
+                                try {
+                                    if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                                        val profileStore = androidx.webkit.ProfileStore.getInstance()
+                                        val webkitProfile = profileStore.getOrCreateProfile("profile_${profile.id}")
+                                        androidx.webkit.WebViewCompat.setProfile(this, webkitProfile.name)
+                                        android.util.Log.d("BrowserScreen", "Configured MULTI_PROFILE for ${profile.name}")
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("BrowserScreen", "Failed to set MULTI_PROFILE", e)
+                                }
+
                                 // Hardware acceleration layer for 60/120fps butter-smooth rendering
                                 setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
-                                val cookieManager = CookieManager.getInstance()
+                                val cookieManager = try {
+                                    if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                                        val profileStore = androidx.webkit.ProfileStore.getInstance()
+                                        val webkitProfile = profileStore.getOrCreateProfile("profile_${profile.id}")
+                                        webkitProfile.cookieManager
+                                    } else {
+                                        CookieManager.getInstance()
+                                    }
+                                } catch (e: Exception) {
+                                    CookieManager.getInstance()
+                                }
                                 cookieManager.setAcceptCookie(true)
                                 cookieManager.setAcceptThirdPartyCookies(this, true)
 
