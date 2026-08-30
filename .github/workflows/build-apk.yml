@@ -58,7 +58,10 @@ jobs:
       - name: Create temporary debug keystore
         run: |
           echo "=== Checking Debug Keystore ==="
-          if [ -f "./debug.keystore" ]; then
+          if [ -f "./debug.keystore.base64" ]; then
+            echo "Found debug.keystore.base64, decoding..."
+            base64 -d ./debug.keystore.base64 > ./debug.keystore
+          elif [ -f "./debug.keystore" ]; then
             echo "Debug keystore already exists at ./debug.keystore."
           else
             echo "Generating temporary debug keystore..."
