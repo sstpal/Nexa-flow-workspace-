@@ -29,17 +29,22 @@ object BackgroundSessionManager {
         // Safely detach from any previous parent view
         (webView.parent as? ViewGroup)?.removeView(webView)
         
-        profileWebViews[profileId] = webView
         if (isBackgroundEnabled && globalBackgroundTasksEnabled.value) {
+            profileWebViews[profileId] = webView
             activeTaskProfiles[profileId] = true
             // Resume timers so background generations continue
             webView.resumeTimers()
             context?.let { ctx ->
                 BackgroundProfileService.start(ctx, activeTaskProfiles.size)
             }
+        } else {
+            try {
+                webView.stopLoading()
+                webView.destroy()
+            } catch (e: Exception) {}
+            profileWebViews.remove(profileId)
         }
     }
-
     fun resumeAllTimers() {
         profileWebViews.values.forEach { wv ->
             try {

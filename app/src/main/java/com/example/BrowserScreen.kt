@@ -1084,7 +1084,7 @@ fun BrowserScreen(
                                 }
 
                                 // Let system handle hardware acceleration automatically
-                                // setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
 
                                 val cookieManager = try {
                                     if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
@@ -1249,6 +1249,14 @@ fun BrowserScreen(
                                 }
 
                                 webViewClient = object : WebViewClient() {
+                                    override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
+                                        android.util.Log.e("BrowserScreen", "Renderer crashed. Recreating...");
+                                        coroutineScope.launch {
+                                            BackgroundSessionManager.removeSession(profile.id, context)
+                                            webViewInstance = null
+                                        }
+                                        return true
+                                    }
                                     override fun shouldInterceptRequest(
                                         view: WebView?,
                                         request: WebResourceRequest?
