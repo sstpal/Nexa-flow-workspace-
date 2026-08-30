@@ -106,19 +106,15 @@ object SessionManager {
         profileId: Int,
         url: String? = null
     ): List<SessionCookie> = withContext(Dispatchers.IO) {
-        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
-            try {
-                val profileStore = androidx.webkit.ProfileStore.getInstance()
-                val webkitProfile = profileStore.getProfile("profile_${profileId}")
-                webkitProfile?.cookieManager?.flush()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            return@withContext emptyList()
-        }
         val saved = mutableListOf<SessionCookie>()
         try {
-            val cookieManager = CookieManager.getInstance()
+            val cookieManager = if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                val profileStore = androidx.webkit.ProfileStore.getInstance()
+                val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                webkitProfile?.cookieManager ?: android.webkit.CookieManager.getInstance()
+            } else {
+                android.webkit.CookieManager.getInstance()
+            }
             cookieManager.flush()
 
             val domainsToInspect = mutableSetOf<String>()
@@ -212,9 +208,6 @@ object SessionManager {
         profileId: Int,
         url: String
     ): Boolean = withContext(Dispatchers.IO) {
-        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
-            return@withContext true
-        }
         if (url.isBlank() || !url.startsWith("http")) return@withContext false
 
         val domain = extractDomain(url)
@@ -244,7 +237,13 @@ object SessionManager {
             }
 
             if (cookiesToInject.isNotEmpty()) {
-                val cookieManager = CookieManager.getInstance()
+                val cookieManager = if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                    val profileStore = androidx.webkit.ProfileStore.getInstance()
+                    val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                    webkitProfile?.cookieManager ?: android.webkit.CookieManager.getInstance()
+                } else {
+                    android.webkit.CookieManager.getInstance()
+                }
                 cookieManager.setAcceptCookie(true)
 
                 for (sc in cookiesToInject) {
@@ -266,13 +265,17 @@ object SessionManager {
         context: Context,
         profileId: Int
     ): Int = withContext(Dispatchers.IO) {
-        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
-            return@withContext 0
-        }
         try {
             val db = AppDatabase.getDatabase(context)
             val cookies = db.sessionCookieDao().getCookiesForProfileSync(profileId)
-            val cookieManager = CookieManager.getInstance()
+
+            val cookieManager = if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.MULTI_PROFILE)) {
+                val profileStore = androidx.webkit.ProfileStore.getInstance()
+                val webkitProfile = profileStore.getProfile("profile_${profileId}")
+                webkitProfile?.cookieManager ?: android.webkit.CookieManager.getInstance()
+            } else {
+                android.webkit.CookieManager.getInstance()
+            }
             cookieManager.setAcceptCookie(true)
 
             var injectedCount = 0
