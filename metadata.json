@@ -1,0 +1,6 @@
+{
+  "name": "NexaFlow Workspaces",
+  "description": "Multi-profile isolated workspace browser with Room persistence, session cookie extraction, auto-login, bookmarks, and Google Drive appDataFolder cloud backup & restore.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

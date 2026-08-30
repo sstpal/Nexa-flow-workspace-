@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NexaFlow Workspaces</string>
+    <string name="google_oauth_client_id">500339830613-o58e1j6o8nrs7ro7qdrttn7n7vrbsn8o.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">500339830613-o58e1j6o8nrs7ro7qdrttn7n7vrbsn8o.apps.googleusercontent.com</string>
+</resources>
