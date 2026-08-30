@@ -269,22 +269,14 @@ object SessionManager {
 
     private fun injectSingleCookieEntry(cookieManager: CookieManager, domain: String, cookieString: String) {
         val cleanDomain = if (domain.startsWith(".")) domain.substring(1) else domain
-        val targets = listOf(
-            "https://$cleanDomain",
-            "https://www.$cleanDomain",
-            "https://.$cleanDomain",
-            "http://$cleanDomain"
-        )
+        val target = "https://$cleanDomain"
 
         val individualCookies = cookieString.split(";")
         for (indCookie in individualCookies) {
             val trimmed = indCookie.trim()
             if (trimmed.isNotEmpty()) {
-                for (target in targets) {
-                    cookieManager.setCookie(target, trimmed)
-                    cookieManager.setCookie(target, "$trimmed; Domain=.$cleanDomain; Path=/; Secure; SameSite=None")
-                    cookieManager.setCookie(target, "$trimmed; Domain=$cleanDomain; Path=/; Secure")
-                }
+                // Set the cookie only once with proper domain and path to prevent duplicate headers
+                cookieManager.setCookie(target, "$trimmed; Domain=.$cleanDomain; Path=/; Secure")
             }
         }
     }
